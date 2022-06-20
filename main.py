@@ -4,6 +4,8 @@ import jwt_handler
 from jwt_bearer import JWTBearer
 from models import PostSchema, UserSchema, UserLoginSchema
 
+from passlib.hash import sha256_crypt
+
 posts = [
     {
         "id": 1,
@@ -29,7 +31,7 @@ app = FastAPI()
 
 def check_user(data: UserLoginSchema):
     for user in users:
-        if user.email == data.email and user.password == data.password:
+        if user.email == data.email and sha256_crypt.verify(data.password, user.password):
             return True
     return False
 
@@ -73,6 +75,7 @@ def add_post(post: PostSchema):
 
 @app.post("/user/signup", tags=["user"])
 def create_user(user: UserSchema = Body(...)):
+    user.password = sha256_crypt.encrypt(user.password)
     users.append(user)  # replace with db call, making sure to hash the password first
     return jwt_handler.signJWT(user.email)
 
